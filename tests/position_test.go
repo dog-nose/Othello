@@ -40,3 +40,35 @@ func TestPositionIsValid(t *testing.T) {
 		}
 	}
 }
+
+func TestParsePosition(t *testing.T) {
+	tests := []struct {
+		input   string
+		want    src.Position
+		wantErr bool
+	}{
+		{"a1", src.Position{Col: 0, Row: 0}, false},
+		{"d4", src.Position{Col: 3, Row: 3}, false},
+		{"h8", src.Position{Col: 7, Row: 7}, false},
+		{"e5", src.Position{Col: 4, Row: 4}, false},
+		{"a9", src.Position{}, true},  // 範囲外
+		{"i1", src.Position{}, true},  // 範囲外
+		{"a0", src.Position{}, true},  // 範囲外
+		{"", src.Position{}, true},    // 空文字列
+		{"abc", src.Position{}, true}, // 不正な形式
+		{"1a", src.Position{}, true},  // 順序が逆
+	}
+
+	for _, tt := range tests {
+		got, err := src.ParsePosition(tt.input)
+		if (err != nil) != tt.wantErr {
+			t.Errorf("ParsePosition(%q) error = %v, wantErr %v",
+				tt.input, err, tt.wantErr)
+			continue
+		}
+		if !tt.wantErr && got != tt.want {
+			t.Errorf("ParsePosition(%q) = %v, want %v",
+				tt.input, got, tt.want)
+		}
+	}
+}
