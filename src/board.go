@@ -19,3 +19,12 @@ func (b *Board) Get(pos Position) CellState {
 func (b *Board) Set(pos Position, state CellState) {
 	b.cells[pos.Row][pos.Col] = state
 }
+
+// SetupInitialPosition はゲーム開始時の初期配置を設定する
+// d4: 白、e4: 黒、d5: 黒、e5: 白
+func (b *Board) SetupInitialPosition() {
+	b.Set(Position{Col: 3, Row: 3}, White) // d4
+	b.Set(Position{Col: 4, Row: 3}, Black) // e4
+	b.Set(Position{Col: 3, Row: 4}, Black) // d5
+	b.Set(Position{Col: 4, Row: 4}, White) // e5
+}
