@@ -1,0 +1,114 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+  background-color: #1a1a2e;
+  color: #e0e0e0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.app-title {
+  font-size: 2.5rem;
+  margin-bottom: 16px;
+  color: #e0e0e0;
+  letter-spacing: 4px;
+}
+
+.game-info {
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.play-id {
+  font-size: 0.75rem;
+  color: #888;
+  margin: 0 0 8px;
+}
+
+.score {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.score-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border-radius: 8px;
+  transition: background-color 0.3s;
+}
+
+.score-item--active {
+  background-color: rgba(46, 139, 87, 0.3);
+}
+
+.score-separator {
+  color: #666;
+}
+
+.stone-icon {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+}
+
+.stone-icon--black {
+  background: radial-gradient(circle at 35% 35%, #555, #111);
+}
+
+.stone-icon--white {
+  background: radial-gradient(circle at 35% 35%, #fff, #ccc);
+}
+
+.game-result {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #ffd700;
+  margin: 0;
+}
+
+.turn-indicator {
+  font-size: 1rem;
+  color: #aaa;
+  margin: 0;
+}
+
+.game-controls {
+  margin-top: 20px;
+}
+
+.btn {
+  padding: 12px 32px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn--start {
+  background-color: #2e8b57;
+  color: white;
+}
+
+.btn--start:hover {
+  background-color: #3ca06a;
+}
+
+.btn--restart {
+  background-color: #4a6fa5;
+  color: white;
+}
+
+.btn--restart:hover {
+  background-color: #5a82bd;
+}
