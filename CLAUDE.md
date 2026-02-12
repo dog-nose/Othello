@@ -4,34 +4,50 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-CLIで遊べるオセロ（リバーシ）ゲーム。
+Webブラウザで遊べるオセロ（リバーシ）ゲーム。React + TypeScript フロントエンド、Go APIバックエンド、MySQL データベースを Docker Compose で構成。
 
 ## Technology Stack
 
-- 言語: Go
-- テスト: `go test`
+- フロントエンド: React + TypeScript (Vite)
+- バックエンド: Go
+- データベース: MySQL 8.0
+- インフラ: Docker Compose
+- テスト: Vitest (フロントエンド), `go test` (バックエンド)
 - Lint: `gofmt`, `go vet`
 
 ## Project Structure
 
-- `src/` - オセロアプリのソースコード（Goモジュール）
-- `tests/` - テストコード（`*_test.go`）
+- `frontend/` - React + TypeScript フロントエンド
+  - `src/logic/` - ゲームロジック（盤面操作、合法手判定、勝敗判定）
+  - `src/components/` - UIコンポーネント
+  - `src/hooks/` - カスタムフック
+  - `src/api/` - APIクライアント
+- `backend/` - Go APIサーバー
+  - `handler/` - HTTPハンドラー
+  - `model/` - リクエスト/レスポンス型
+  - `repository/` - データベースアクセス
+  - `config/` - 設定
+  - `middleware/` - CORSなど
+- `mysql/init/` - DB初期化SQL
 - `doc/` - 仕様書・ドキュメント
 
 ## Commands
 
 ```bash
-# テスト実行
-go test ./...
+# 全コンテナ起動
+docker compose up --build
 
-# フォーマットチェック
-gofmt -l .
+# フロントエンドテスト実行
+cd frontend && npm test
 
-# フォーマット適用
-gofmt -w .
+# バックエンドテスト実行（Docker経由、ローカルにGoなし）
+cd backend && docker run --rm -v "$(pwd)":/app -w /app golang:1.23-alpine go test ./...
 
-# 静的解析
-go vet ./...
+# バックエンドフォーマットチェック
+cd backend && docker run --rm -v "$(pwd)":/app -w /app golang:1.23-alpine gofmt -l .
+
+# バックエンド静的解析
+cd backend && docker run --rm -v "$(pwd)":/app -w /app golang:1.23-alpine go vet ./...
 ```
 
 ## Development Methodology
@@ -59,6 +75,7 @@ Kent BeckのTDD（テスト駆動開発）に従って開発を進める。
 1. `go test ./...` が成功する
 2. `gofmt -l .` で差分が出ない（フォーマットが正しい）
 3. `go vet ./...` でエラーが出ない
+4. `cd frontend && npm test` が成功する
 
 ### Commit Message Format
 

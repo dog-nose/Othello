@@ -1,0 +1,206 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+  background-color: #1a1a2e;
+  color: #e0e0e0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.app-title {
+  font-size: 2.5rem;
+  margin-bottom: 16px;
+  color: #e0e0e0;
+  letter-spacing: 4px;
+}
+
+.game-info {
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.play-id {
+  font-size: 0.75rem;
+  color: #888;
+  margin: 0 0 8px;
+}
+
+.score {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.score-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border-radius: 8px;
+  transition: background-color 0.3s;
+}
+
+.score-item--active {
+  background-color: rgba(46, 139, 87, 0.3);
+}
+
+.score-separator {
+  color: #666;
+}
+
+.stone-icon {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+}
+
+.stone-icon--black {
+  background: radial-gradient(circle at 35% 35%, #555, #111);
+}
+
+.stone-icon--white {
+  background: radial-gradient(circle at 35% 35%, #fff, #ccc);
+}
+
+.game-result {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #ffd700;
+  margin: 0;
+}
+
+.turn-indicator {
+  font-size: 1rem;
+  color: #aaa;
+  margin: 0;
+}
+
+.game-controls {
+  margin-top: 20px;
+}
+
+.btn {
+  padding: 12px 32px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn--start {
+  background-color: #2e8b57;
+  color: white;
+}
+
+.btn--start:hover {
+  background-color: #3ca06a;
+}
+
+.btn--restart {
+  background-color: #4a6fa5;
+  color: white;
+}
+
+.btn--restart:hover {
+  background-color: #5a82bd;
+}
+
+.btn--pvp {
+  background-color: #8b5e2e;
+  color: white;
+}
+
+.btn--pvp:hover {
+  background-color: #a06a3c;
+}
+
+.btn--join {
+  background-color: #2e8b57;
+  color: white;
+}
+
+.btn--join:hover {
+  background-color: #3ca06a;
+}
+
+.btn--join:disabled {
+  background-color: #555;
+  cursor: not-allowed;
+}
+
+.btn--back {
+  background-color: transparent;
+  color: #888;
+  border: 1px solid #555;
+  margin-top: 16px;
+  font-size: 0.9rem;
+  padding: 8px 20px;
+}
+
+.btn--back:hover {
+  color: #e0e0e0;
+  border-color: #888;
+}
+
+.mode-select {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 40px;
+}
+
+.pvp-lobby {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.lobby-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.lobby-divider {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.lobby-input {
+  padding: 10px 16px;
+  font-size: 1rem;
+  border: 1px solid #555;
+  border-radius: 8px;
+  background-color: #2a2a4a;
+  color: #e0e0e0;
+  text-align: center;
+  width: 280px;
+}
+
+.lobby-input:focus {
+  outline: none;
+  border-color: #2e8b57;
+}
+
+.lobby-error {
+  color: #e74c3c;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.pvp-role {
+  font-size: 0.9rem;
+  color: #aaa;
+  margin: 0 0 4px;
+}

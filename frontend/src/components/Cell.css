@@ -1,0 +1,54 @@
+.cell {
+  width: 60px;
+  height: 60px;
+  background-color: #2e8b57;
+  border: 1px solid #1a5e38;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+}
+
+.cell--valid {
+  cursor: pointer;
+}
+
+.cell--valid:hover {
+  background-color: #3ca06a;
+}
+
+.cell--last-move {
+  background-color: #3daa70;
+}
+
+.stone {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.stone--black {
+  background: radial-gradient(circle at 35% 35%, #555, #111);
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.stone--white {
+  background: radial-gradient(circle at 35% 35%, #fff, #ccc);
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.hint {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.hint--black {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.hint--white {
+  background-color: rgba(255, 255, 255, 0.4);
+}
