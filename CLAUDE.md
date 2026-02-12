@@ -80,6 +80,7 @@ Kent BeckのTDD（テスト駆動開発）に従って開発を進める。
 ### Commit Message Format
 
 コミットメッセージの先頭にTDDのステータスを `[]` で囲んで記載する。
+ <noreply@anthropic.com>などのメッセージを入れないようにしてください。
 
 ```
 [RED] テスト内容の説明
