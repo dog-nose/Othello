@@ -5,6 +5,8 @@ CREATE TABLE IF NOT EXISTS games (
     black_count INT DEFAULT NULL,
     white_count INT DEFAULT NULL,
     result ENUM('black_win', 'white_win', 'draw') DEFAULT NULL,
+    host_secret VARCHAR(36) DEFAULT NULL,
+    guest_secret VARCHAR(36) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
@@ -28,6 +30,8 @@ CREATE TABLE IF NOT EXISTS games (
     black_count INT DEFAULT NULL,
     white_count INT DEFAULT NULL,
     result ENUM('black_win', 'white_win', 'draw') DEFAULT NULL,
+    host_secret VARCHAR(36) DEFAULT NULL,
+    guest_secret VARCHAR(36) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
