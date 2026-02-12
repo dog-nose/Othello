@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -25,12 +26,13 @@ func (h *Handler) StartGame(w http.ResponseWriter, r *http.Request) {
 	}
 
 	playID := uuid.New().String()
-	if err := h.repo.CreateGame(playID); err != nil {
+	hostSecret := uuid.New().String()
+	if err := h.repo.CreateGameWithSecret(playID, hostSecret); err != nil {
 		respondError(w, http.StatusInternalServerError, "failed to create game")
 		return
 	}
 
-	respondJSON(w, http.StatusOK, model.StartGameResponse{PlayID: playID})
+	respondJSON(w, http.StatusOK, model.StartGameResponse{PlayID: playID, HostSecret: hostSecret})
 }
 
 func (h *Handler) PlaceStone(w http.ResponseWriter, r *http.Request) {
@@ -64,7 +66,34 @@ func (h *Handler) PlaceStone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.repo.RecordMove(req.PlayID, req.Color, req.Col, req.Row, moveCount+1); err != nil {
+	moveOrder := moveCount + 1
+
+	// Secret validation for PvP games
+	game, err := h.repo.GetGame(req.PlayID)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "failed to get game")
+		return
+	}
+
+	if game.HostSecret != nil {
+		// PvP game: validate secret
+		var expectedSecret string
+		if moveOrder%2 == 1 {
+			// Odd move_order = black (host)
+			expectedSecret = *game.HostSecret
+		} else {
+			// Even move_order = white (guest)
+			if game.GuestSecret != nil {
+				expectedSecret = *game.GuestSecret
+			}
+		}
+		if req.Secret != expectedSecret {
+			respondError(w, http.StatusForbidden, "invalid secret")
+			return
+		}
+	}
+
+	if err := h.repo.RecordMove(req.PlayID, req.Color, req.Col, req.Row, moveOrder); err != nil {
 		respondError(w, http.StatusInternalServerError, "failed to record move")
 		return
 	}
@@ -104,6 +133,62 @@ func (h *Handler) EndGame(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondJSON(w, http.StatusOK, model.SuccessResponse{Success: true})
+}
+
+func (h *Handler) JoinGame(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		respondError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	var req model.JoinGameRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if req.PlayID == "" {
+		respondError(w, http.StatusBadRequest, "play_id is required")
+		return
+	}
+
+	guestSecret := uuid.New().String()
+	if err := h.repo.SetGuestSecret(req.PlayID, guestSecret); err != nil {
+		if errors.Is(err, repository.ErrGuestAlreadyJoined) {
+			respondError(w, http.StatusConflict, "guest already joined or game not found")
+			return
+		}
+		respondError(w, http.StatusInternalServerError, "failed to join game")
+		return
+	}
+
+	respondJSON(w, http.StatusOK, model.JoinGameResponse{GuestSecret: guestSecret})
+}
+
+func (h *Handler) PollMoves(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		respondError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	var req model.PollMovesRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if req.PlayID == "" {
+		respondError(w, http.StatusBadRequest, "play_id is required")
+		return
+	}
+
+	moves, err := h.repo.GetMovesAfter(req.PlayID, req.AfterMoveOrder)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "failed to get moves")
+		return
+	}
+
+	respondJSON(w, http.StatusOK, model.PollMovesResponse{Moves: moves})
 }
 
 func respondJSON(w http.ResponseWriter, status int, data interface{}) {

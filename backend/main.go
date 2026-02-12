@@ -35,6 +35,8 @@ func main() {
 	mux.HandleFunc("/start-game", h.StartGame)
 	mux.HandleFunc("/place-stone", h.PlaceStone)
 	mux.HandleFunc("/end-game", h.EndGame)
+	mux.HandleFunc("/join-game", h.JoinGame)
+	mux.HandleFunc("/poll-moves", h.PollMoves)
 
 	server := middleware.CORS(mux)
 
