@@ -3,6 +3,7 @@ package handler
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -10,21 +11,32 @@ import (
 	"testing"
 
 	"github.com/dog-nose/othello-backend/model"
+	"github.com/dog-nose/othello-backend/repository"
 )
 
 // Mock Repository
 
 type mockRepository struct {
-	createGameFn   func(playID string) error
-	getGameFn      func(playID string) (*model.Game, error)
-	recordMoveFn   func(playID, color string, col, row, moveOrder int) error
-	getMoveCountFn func(playID string) (int, error)
-	endGameFn      func(playID string, blackCount, whiteCount int, result string) error
+	createGameFn           func(playID string) error
+	createGameWithSecretFn func(playID, hostSecret string) error
+	getGameFn              func(playID string) (*model.Game, error)
+	recordMoveFn           func(playID, color string, col, row, moveOrder int) error
+	getMoveCountFn         func(playID string) (int, error)
+	endGameFn              func(playID string, blackCount, whiteCount int, result string) error
+	setGuestSecretFn       func(playID, guestSecret string) error
+	getMovesAfterFn        func(playID string, afterMoveOrder int) ([]model.Move, error)
 }
 
 func (m *mockRepository) CreateGame(playID string) error {
 	if m.createGameFn != nil {
 		return m.createGameFn(playID)
+	}
+	return nil
+}
+
+func (m *mockRepository) CreateGameWithSecret(playID, hostSecret string) error {
+	if m.createGameWithSecretFn != nil {
+		return m.createGameWithSecretFn(playID, hostSecret)
 	}
 	return nil
 }
@@ -57,8 +69,29 @@ func (m *mockRepository) EndGame(playID string, blackCount, whiteCount int, resu
 	return nil
 }
 
+func (m *mockRepository) SetGuestSecret(playID, guestSecret string) error {
+	if m.setGuestSecretFn != nil {
+		return m.setGuestSecretFn(playID, guestSecret)
+	}
+	return nil
+}
+
+func (m *mockRepository) GetMovesAfter(playID string, afterMoveOrder int) ([]model.Move, error) {
+	if m.getMovesAfterFn != nil {
+		return m.getMovesAfterFn(playID, afterMoveOrder)
+	}
+	return []model.Move{}, nil
+}
+
 func TestStartGame(t *testing.T) {
-	mock := &mockRepository{}
+	var calledPlayID, calledSecret string
+	mock := &mockRepository{
+		createGameWithSecretFn: func(playID, hostSecret string) error {
+			calledPlayID = playID
+			calledSecret = hostSecret
+			return nil
+		},
+	}
 	h := New(mock)
 
 	req := httptest.NewRequest(http.MethodPost, "/start-game", nil)
@@ -76,6 +109,12 @@ func TestStartGame(t *testing.T) {
 	}
 	if resp.PlayID == "" {
 		t.Fatal("expected play_id to be non-empty")
+	}
+	if resp.HostSecret == "" {
+		t.Fatal("expected host_secret to be non-empty")
+	}
+	if calledPlayID == "" || calledSecret == "" {
+		t.Fatal("expected CreateGameWithSecret to be called")
 	}
 }
 
@@ -134,6 +173,126 @@ func TestPlaceStone(t *testing.T) {
 	}
 	if recordedOrder != 4 {
 		t.Fatalf("expected move_order 4, got %d", recordedOrder)
+	}
+}
+
+func TestPlaceStone_ValidSecret(t *testing.T) {
+	hostSecret := "host-secret-123"
+	mock := &mockRepository{
+		getMoveCountFn: func(playID string) (int, error) {
+			return 0, nil // move_order will be 1 (black/host)
+		},
+		getGameFn: func(playID string) (*model.Game, error) {
+			return &model.Game{PlayID: playID, HostSecret: &hostSecret}, nil
+		},
+	}
+	h := New(mock)
+
+	body := model.PlaceStoneRequest{
+		PlayID: "test-id",
+		Color:  "black",
+		Col:    2,
+		Row:    3,
+		Secret: "host-secret-123",
+	}
+	b, _ := json.Marshal(body)
+	req := httptest.NewRequest(http.MethodPost, "/place-stone", bytes.NewReader(b))
+	rec := httptest.NewRecorder()
+
+	h.PlaceStone(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rec.Code)
+	}
+}
+
+func TestPlaceStone_WrongSecret(t *testing.T) {
+	hostSecret := "host-secret-123"
+	mock := &mockRepository{
+		getMoveCountFn: func(playID string) (int, error) {
+			return 0, nil // move_order will be 1 (black/host)
+		},
+		getGameFn: func(playID string) (*model.Game, error) {
+			return &model.Game{PlayID: playID, HostSecret: &hostSecret}, nil
+		},
+	}
+	h := New(mock)
+
+	body := model.PlaceStoneRequest{
+		PlayID: "test-id",
+		Color:  "black",
+		Col:    2,
+		Row:    3,
+		Secret: "wrong-secret",
+	}
+	b, _ := json.Marshal(body)
+	req := httptest.NewRequest(http.MethodPost, "/place-stone", bytes.NewReader(b))
+	rec := httptest.NewRecorder()
+
+	h.PlaceStone(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("expected status 403, got %d", rec.Code)
+	}
+}
+
+func TestPlaceStone_GuestSecret(t *testing.T) {
+	hostSecret := "host-secret-123"
+	guestSecret := "guest-secret-456"
+	mock := &mockRepository{
+		getMoveCountFn: func(playID string) (int, error) {
+			return 1, nil // move_order will be 2 (white/guest)
+		},
+		getGameFn: func(playID string) (*model.Game, error) {
+			return &model.Game{PlayID: playID, HostSecret: &hostSecret, GuestSecret: &guestSecret}, nil
+		},
+	}
+	h := New(mock)
+
+	body := model.PlaceStoneRequest{
+		PlayID: "test-id",
+		Color:  "white",
+		Col:    2,
+		Row:    3,
+		Secret: "guest-secret-456",
+	}
+	b, _ := json.Marshal(body)
+	req := httptest.NewRequest(http.MethodPost, "/place-stone", bytes.NewReader(b))
+	rec := httptest.NewRecorder()
+
+	h.PlaceStone(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rec.Code)
+	}
+}
+
+func TestPlaceStone_NoSecretLegacyGame(t *testing.T) {
+	// Legacy games (no host_secret) should skip secret validation
+	mock := &mockRepository{
+		getMoveCountFn: func(playID string) (int, error) {
+			return 0, nil
+		},
+		getGameFn: func(playID string) (*model.Game, error) {
+			return &model.Game{PlayID: playID}, nil
+		},
+	}
+	h := New(mock)
+
+	body := model.PlaceStoneRequest{
+		PlayID: "test-id",
+		Color:  "black",
+		Col:    2,
+		Row:    3,
+	}
+	b, _ := json.Marshal(body)
+	req := httptest.NewRequest(http.MethodPost, "/place-stone", bytes.NewReader(b))
+	rec := httptest.NewRecorder()
+
+	h.PlaceStone(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rec.Code)
 	}
 }
 
@@ -287,7 +446,7 @@ func TestEndGame_MissingPlayID(t *testing.T) {
 
 func TestStartGame_CreateGameError(t *testing.T) {
 	mock := &mockRepository{
-		createGameFn: func(playID string) error {
+		createGameWithSecretFn: func(playID, hostSecret string) error {
 			return fmt.Errorf("db error")
 		},
 	}
@@ -432,5 +591,185 @@ func TestEndGame_EndGameError(t *testing.T) {
 
 	if rec.Code != http.StatusInternalServerError {
 		t.Fatalf("expected status 500, got %d", rec.Code)
+	}
+}
+
+// JoinGame tests
+
+func TestJoinGame(t *testing.T) {
+	var calledPlayID, calledGuestSecret string
+	mock := &mockRepository{
+		setGuestSecretFn: func(playID, guestSecret string) error {
+			calledPlayID = playID
+			calledGuestSecret = guestSecret
+			return nil
+		},
+	}
+	h := New(mock)
+
+	body := model.JoinGameRequest{PlayID: "game-123"}
+	b, _ := json.Marshal(body)
+	req := httptest.NewRequest(http.MethodPost, "/join-game", bytes.NewReader(b))
+	rec := httptest.NewRecorder()
+
+	h.JoinGame(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rec.Code)
+	}
+
+	var resp model.JoinGameResponse
+	if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if resp.GuestSecret == "" {
+		t.Fatal("expected guest_secret to be non-empty")
+	}
+	if calledPlayID != "game-123" {
+		t.Fatalf("expected play_id game-123, got %s", calledPlayID)
+	}
+	if calledGuestSecret == "" {
+		t.Fatal("expected SetGuestSecret to be called with non-empty secret")
+	}
+}
+
+func TestJoinGame_AlreadyJoined(t *testing.T) {
+	mock := &mockRepository{
+		setGuestSecretFn: func(playID, guestSecret string) error {
+			return repository.ErrGuestAlreadyJoined
+		},
+	}
+	h := New(mock)
+
+	body := model.JoinGameRequest{PlayID: "game-123"}
+	b, _ := json.Marshal(body)
+	req := httptest.NewRequest(http.MethodPost, "/join-game", bytes.NewReader(b))
+	rec := httptest.NewRecorder()
+
+	h.JoinGame(rec, req)
+
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("expected status 409, got %d", rec.Code)
+	}
+}
+
+func TestJoinGame_MissingPlayID(t *testing.T) {
+	mock := &mockRepository{}
+	h := New(mock)
+
+	body := model.JoinGameRequest{}
+	b, _ := json.Marshal(body)
+	req := httptest.NewRequest(http.MethodPost, "/join-game", bytes.NewReader(b))
+	rec := httptest.NewRecorder()
+
+	h.JoinGame(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", rec.Code)
+	}
+}
+
+func TestJoinGame_MethodNotAllowed(t *testing.T) {
+	mock := &mockRepository{}
+	h := New(mock)
+
+	req := httptest.NewRequest(http.MethodGet, "/join-game", nil)
+	rec := httptest.NewRecorder()
+
+	h.JoinGame(rec, req)
+
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("expected status 405, got %d", rec.Code)
+	}
+}
+
+// PollMoves tests
+
+func TestPollMoves(t *testing.T) {
+	mock := &mockRepository{
+		getMovesAfterFn: func(playID string, afterMoveOrder int) ([]model.Move, error) {
+			return []model.Move{
+				{PlayID: playID, Color: "black", Col: 2, Row: 3, MoveOrder: 2},
+				{PlayID: playID, Color: "white", Col: 4, Row: 5, MoveOrder: 3},
+			}, nil
+		},
+	}
+	h := New(mock)
+
+	body := model.PollMovesRequest{PlayID: "game-123", AfterMoveOrder: 1}
+	b, _ := json.Marshal(body)
+	req := httptest.NewRequest(http.MethodPost, "/poll-moves", bytes.NewReader(b))
+	rec := httptest.NewRecorder()
+
+	h.PollMoves(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rec.Code)
+	}
+
+	var resp model.PollMovesResponse
+	if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if len(resp.Moves) != 2 {
+		t.Fatalf("expected 2 moves, got %d", len(resp.Moves))
+	}
+}
+
+func TestPollMoves_NoNewMoves(t *testing.T) {
+	mock := &mockRepository{
+		getMovesAfterFn: func(playID string, afterMoveOrder int) ([]model.Move, error) {
+			return []model.Move{}, nil
+		},
+	}
+	h := New(mock)
+
+	body := model.PollMovesRequest{PlayID: "game-123", AfterMoveOrder: 5}
+	b, _ := json.Marshal(body)
+	req := httptest.NewRequest(http.MethodPost, "/poll-moves", bytes.NewReader(b))
+	rec := httptest.NewRecorder()
+
+	h.PollMoves(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rec.Code)
+	}
+
+	var resp model.PollMovesResponse
+	if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if len(resp.Moves) != 0 {
+		t.Fatalf("expected 0 moves, got %d", len(resp.Moves))
+	}
+}
+
+func TestPollMoves_MissingPlayID(t *testing.T) {
+	mock := &mockRepository{}
+	h := New(mock)
+
+	body := model.PollMovesRequest{}
+	b, _ := json.Marshal(body)
+	req := httptest.NewRequest(http.MethodPost, "/poll-moves", bytes.NewReader(b))
+	rec := httptest.NewRecorder()
+
+	h.PollMoves(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", rec.Code)
+	}
+}
+
+func TestPollMoves_MethodNotAllowed(t *testing.T) {
+	mock := &mockRepository{}
+	h := New(mock)
+
+	req := httptest.NewRequest(http.MethodGet, "/poll-moves", nil)
+	rec := httptest.NewRecorder()
+
+	h.PollMoves(rec, req)
+
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("expected status 405, got %d", rec.Code)
 	}
 }
