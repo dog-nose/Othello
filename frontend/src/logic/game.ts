@@ -20,6 +20,14 @@ function nextPlayer(current: Color): Color {
   return current === 'black' ? 'white' : 'black';
 }
 
+export function applyOpponentMove(state: GameState, row: number, col: number, color: Color): GameState {
+  const newBoard = placeStone(state.board, row, col, color);
+  if (newBoard === state.board) {
+    return state;
+  }
+  return resolveNextTurn(newBoard, nextPlayer(color), { row, col });
+}
+
 export function handleMove(state: GameState, row: number, col: number): GameState {
   const newBoard = placeStone(state.board, row, col, state.currentPlayer);
   if (newBoard === state.board) {
