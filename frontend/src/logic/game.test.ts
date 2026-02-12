@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createInitialGameState, handleMove } from './game';
+import { createInitialGameState, handleMove, applyOpponentMove } from './game';
 
 describe('createInitialGameState', () => {
   it('should start with black as current player', () => {
@@ -61,5 +61,28 @@ describe('handleMove', () => {
     expect(next.validMoves.length).toBeGreaterThan(0);
     // White should have valid moves after black plays (2,3)
     expect(next.currentPlayer).toBe('white');
+  });
+});
+
+describe('applyOpponentMove', () => {
+  it('should apply opponent move to the board', () => {
+    const state = createInitialGameState();
+    // Black plays at (2,3) - this is a valid move for black
+    const next = applyOpponentMove(state, 2, 3, 'black');
+    expect(next.board[2][3]).toBe('black');
+    expect(next.blackCount).toBe(4);
+    expect(next.whiteCount).toBe(1);
+  });
+
+  it('should switch to the correct next player', () => {
+    const state = createInitialGameState();
+    const next = applyOpponentMove(state, 2, 3, 'black');
+    expect(next.currentPlayer).toBe('white');
+  });
+
+  it('should compute valid moves for the next player', () => {
+    const state = createInitialGameState();
+    const next = applyOpponentMove(state, 2, 3, 'black');
+    expect(next.validMoves.length).toBeGreaterThan(0);
   });
 });

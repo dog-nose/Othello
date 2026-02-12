@@ -18,3 +18,14 @@ export interface GameState {
   validMoves: Position[];
   lastMove: Position | null;
 }
+
+export type PlayerRole = 'host' | 'guest';
+
+export interface PvPState {
+  role: PlayerRole;
+  myColor: Color;
+  secret: string;
+  lastKnownMoveOrder: number;
+  isWaitingForOpponent: boolean;
+  isMyTurn: boolean;
+}
