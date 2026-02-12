@@ -37,3 +37,17 @@
 - [x] Goテストカバレッジ80%以上確認（handler: 100%, config: 100%, middleware: 100%）
 - [x] gofmt, go vet 確認
 - [x] CLAUDE.md 更新
+
+## Phase 6: PvP機能追加
+- [x] DBスキーマ: games テーブルに host_secret, guest_secret カラム追加
+- [x] Backend Model: Game構造体にsecretフィールド追加、JoinGame/PollMoves型追加
+- [x] Backend Repository: CreateGameWithSecret, SetGuestSecret, GetMovesAfter メソッド追加
+- [x] Backend Handler: StartGame更新、JoinGame/PollMoves追加、PlaceStone secret検証
+- [x] Backend ルート: /join-game, /poll-moves 追加
+- [x] Frontend API: joinGame, pollMoves追加、startGame/placeStone更新
+- [x] Frontend 型: PlayerRole, PvPState 追加
+- [x] Frontend ロジック: applyOpponentMove関数追加（テスト付き）
+- [x] Frontend フック: usePvPGame実装（ゲーム作成・参加・ポーリング）
+- [x] Frontend UI: モード選択画面、PvPLobby、ヒントカラー、GameInfo PvP対応
+- [x] 全テスト通過: frontend 30 tests, backend model 12 tests, backend handler 30 tests
+- [ ] 手動統合テスト: docker compose up で2ブラウザ対戦確認
